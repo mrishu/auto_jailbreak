@@ -66,10 +66,13 @@ class AutoJailbreakEnvironment(Environment):
         self.client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
         self.MODEL_TARGET = MODEL_TARGET
         self.MODEL_JUDGE = MODEL_JUDGE
-        self.target_system_prompt = target_system_prompt_dict[TASK_NAME]
-        self.judge_system_prompt = judge_system_prompt_dict[TASK_NAME]
-        self.judge_user_prompt = judge_user_prompt_dict[TASK_NAME]
-        self.get_reward_from_judge_eval = get_reward_from_judge_eval_dict[TASK_NAME]
+        self.TASK_NAME = TASK_NAME
+        self.target_system_prompt = target_system_prompt_dict[self.TASK_NAME]
+        self.judge_system_prompt = judge_system_prompt_dict[self.TASK_NAME]
+        self.judge_user_prompt = judge_user_prompt_dict[self.TASK_NAME]
+        self.get_reward_from_judge_eval = get_reward_from_judge_eval_dict[
+            self.TASK_NAME
+        ]
         self.target_chat_history = [
             {
                 "role": "system",
@@ -86,6 +89,14 @@ class AutoJailbreakEnvironment(Environment):
         """
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._reset_count += 1
+
+        self.target_system_prompt = target_system_prompt_dict[self.TASK_NAME]
+        self.judge_system_prompt = judge_system_prompt_dict[self.TASK_NAME]
+        self.judge_user_prompt = judge_user_prompt_dict[self.TASK_NAME]
+        self.get_reward_from_judge_eval = get_reward_from_judge_eval_dict[
+            self.TASK_NAME
+        ]
+
         self.target_chat_history = [
             {
                 "role": "system",
@@ -94,7 +105,7 @@ class AutoJailbreakEnvironment(Environment):
         ]
 
         return AutoJailbreakObservation(
-            target_reply=f"Environment Ready! TASK: {TASK_NAME}.",
+            target_reply=f"Environment Ready! TASK: {self.TASK_NAME}.",
             judge_reply="",
             judge_eval={},
             error="null",
@@ -136,7 +147,18 @@ class AutoJailbreakEnvironment(Environment):
         Returns:
             AutoJailbreakObservation with the target's reply and reward
         """
-        self._state.step_count += 1
+        new_task = action.select_task.lower().replace(" ", "_")
+        if new_task != self.TASK_NAME:
+            self.TASK_NAME = new_task
+            return self.reset()
+
+        if action.delete_target_prev_chat:
+            self.target_chat_history = [
+                {
+                    "role": "system",
+                    "content": self.target_system_prompt,
+                },
+            ]
 
         attack_prompt = action.attack_prompt
 
@@ -150,13 +172,7 @@ class AutoJailbreakEnvironment(Environment):
                 reward=0.0,
             )
 
-        if action.delete_target_prev_chat:
-            self.target_chat_history = [
-                {
-                    "role": "system",
-                    "content": self.target_system_prompt,
-                },
-            ]
+        self._state.step_count += 1
 
         ## Attack Target LLM
         attack_payload = {"role": "user", "content": attack_prompt}

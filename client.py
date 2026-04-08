@@ -29,6 +29,7 @@ class AutoJailbreakEnv(EnvClient[AutoJailbreakAction, AutoJailbreakObservation, 
         return {
             "attack_prompt": action.attack_prompt,
             "delete_target_prev_chat": action.delete_target_prev_chat,
+            "select_task": action.select_task,
         }
 
     def _parse_result(self, payload: Dict) -> StepResult[AutoJailbreakObservation]:

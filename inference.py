@@ -84,10 +84,17 @@ async def main():
             attacker_messages = attacker_messages_dict[TASK_NAME]
 
             try:
+                await env.step(
+                    AutoJailbreakAction(
+                        attack_prompt="",
+                        delete_target_prev_chat=True,
+                        select_task=TASK_NAME.replace("_", " ").title(),
+                    )
+                )  # Change environment and reset
                 result = await env.reset()
-                log_start(task=TASK_NAME, env="auto_jailbreak_env", model=MODEL_NAME)
                 target_reply = result.observation.target_reply
                 # print(f"[TARGET] {target_reply}", file=chat_file)
+                log_start(task=TASK_NAME, env="auto_jailbreak_env", model=MODEL_NAME)
 
                 for step in range(1, MAX_STEPS + 1):
                     if result.done:
@@ -123,7 +130,9 @@ async def main():
 
                     result = await env.step(
                         AutoJailbreakAction(
-                            attack_prompt=attack, delete_target_prev_chat=True
+                            attack_prompt=attack,
+                            delete_target_prev_chat=True,
+                            select_task=TASK_NAME.replace("_", " ").title(),
                         )
                     )
                     log_step(
