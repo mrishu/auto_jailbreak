@@ -1,0 +1,2 @@
+[console_scripts]
+server = auto_jailbreak.server.app:main
