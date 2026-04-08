@@ -38,7 +38,7 @@ except Exception as e:  # pragma: no cover
 try:
     from ..models import AutoJailbreakAction, AutoJailbreakObservation
     from .auto_jailbreak_environment import AutoJailbreakEnvironment
-except ModuleNotFoundError:
+except ImportError:
     from models import AutoJailbreakAction, AutoJailbreakObservation
     from server.auto_jailbreak_environment import AutoJailbreakEnvironment
 
