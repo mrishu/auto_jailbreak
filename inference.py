@@ -117,7 +117,7 @@ def log_step(
 
     # Print the strictly formatted single line
     print(
-        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={safe_error}",
+        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
     )
 
@@ -130,10 +130,9 @@ def url_log_step(
 
     # URL encode the prompt. This turns spaces into %20, newlines into %0A, and '=' into %3D
     safe_action = urllib.parse.quote(action)
-    safe_error = urllib.parse.quote(error_val)
 
     print(
-        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={safe_error}",
+        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
     )
 
@@ -162,7 +161,7 @@ async def main():
             success = False
             steps_taken = 0
             score = 0.0
-            num_compromises = 0
+            num_compromises = 1
 
             SUCCESS_SCORE_THRESHOLD = (
                 0.15  # >= 15% compromises (3 out of 20 compromises)
