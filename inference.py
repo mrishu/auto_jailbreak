@@ -3,14 +3,16 @@ import asyncio
 from openai import OpenAI
 from typing import Optional, List
 
-from enum import Enum
-
 try:
-    from .client import AutoJailbreakEnv
-    from .models import AutoJailbreakAction
+    try:
+        from .client import AutoJailbreakEnv
+        from .models import AutoJailbreakAction
+    except:
+        from auto_jailbreak.client import AutoJailbreakEnv
+        from auto_jailbreak.models import AutoJailbreakAction
 except:
-    from auto_jailbreak.client import AutoJailbreakEnv
-    from auto_jailbreak.models import AutoJailbreakAction
+    from client import AutoJailbreakEnv
+    from models import AutoJailbreakAction
 
 
 MALICIOUS_GOAL = {

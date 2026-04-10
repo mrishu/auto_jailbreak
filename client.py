@@ -12,7 +12,10 @@ from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-from .models import AutoJailbreakAction, AutoJailbreakObservation
+try:
+    from .models import AutoJailbreakAction, AutoJailbreakObservation
+except:
+    from models import AutoJailbreakAction, AutoJailbreakObservation
 
 
 class AutoJailbreakEnv(EnvClient[AutoJailbreakAction, AutoJailbreakObservation, State]):
