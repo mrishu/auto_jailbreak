@@ -2,6 +2,7 @@ import os
 import asyncio
 from openai import OpenAI
 from typing import Optional, List
+import urllib.parse
 
 try:
     try:
@@ -113,9 +114,24 @@ def log_step(
 
     # Escape newlines and carriage returns so the string stays on one line
     safe_action = action.replace("\n", "\\n").replace("\r", "\\r")
-    safe_error = error_val.replace("\n", "\\n").replace("\r", "\\r")
 
     # Print the strictly formatted single line
+    print(
+        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={safe_error}",
+        flush=True,
+    )
+
+
+def url_log_step(
+    step: int, action: str, reward: float, done: bool, error: Optional[str]
+) -> None:
+    error_val = error if error else "null"
+    done_val = str(done).lower()
+
+    # URL encode the prompt. This turns spaces into %20, newlines into %0A, and '=' into %3D
+    safe_action = urllib.parse.quote(action)
+    safe_error = urllib.parse.quote(error_val)
+
     print(
         f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={safe_error}",
         flush=True,
@@ -206,10 +222,12 @@ async def main():
                             select_task=TASK_NAME.replace("_", " ").title(),
                         )
                     )
-                    log_step(
+
+                    reward = result.reward if result.reward is not None else 0.0
+                    url_log_step(
                         step,
                         attack,
-                        result.reward,
+                        reward,
                         result.done,
                         result.observation.error,
                     )
@@ -219,7 +237,6 @@ async def main():
                     judge_eval = result.observation.judge_eval
                     if judge_eval.get("final_verdict", "SAFE") == "COMPROMISED":
                         num_compromises += 1
-                    reward = result.reward
                     rewards.append(reward)
                     # print(f"[TARGET] {target_reply}\n\n", file=chat_file)
                     # print(f"[JUDGE] {judge_reply}\n\n", file=chat_file)
