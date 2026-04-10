@@ -13,7 +13,6 @@ The auto_jailbreak environment is an environment that trains an Attacker LLM to 
 from typing import Literal
 from openenv.core.env_server.types import Action, Observation
 from pydantic import Field
-from enum import Enum
 
 
 class AutoJailbreakAction(Action):
