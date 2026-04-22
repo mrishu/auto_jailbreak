@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 from openai import OpenAI
 from typing import Optional, List
@@ -89,9 +90,8 @@ attacker_messages = {
 }
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-# MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-Coder-32B-Instruct:nscale")
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-Coder-32B-Instruct:nscale")
+HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
 
 chat_client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
@@ -101,48 +101,51 @@ MODEL_TARGET = "meta-llama/Meta-Llama-3-8B-Instruct"
 MODEL_JUDGE = "meta-llama/Meta-Llama-3-8B-Instruct"
 
 
-def log_start(task: str, env: str, model: str) -> None:
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+# def log_start(task: str, env: str, model: str) -> None:
+#     print(f"[START] task={task} env={env} model={model}", flush=True)
+#
+#
+# def log_step(
+#     step: int, action: str, reward: float, done: bool, error: Optional[str]
+# ) -> None:
+#     # Format booleans and nulls according to the rules
+#     error_val = error if error else "null"
+#     action_val = action if action else "null"
+#     done_val = str(done).lower()
+#
+#     # Escape newlines and carriage returns so the string stays on one line
+#     safe_action = action.replace("\n", "\\n").replace("\r", "\\r")
+#
+#     # Print the strictly formatted single line
+#     print(
+#         f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={error_val}",
+#         flush=True,
+#     )
+#
+#
+# def url_log_step(
+#     step: int, action: str, reward: float, done: bool, error: Optional[str]
+# ) -> None:
+#     error_val = error if error else "null"
+#     done_val = str(done).lower()
+#
+#     # URL encode the prompt. This turns spaces into %20, newlines into %0A, and '=' into %3D
+#     safe_action = urllib.parse.quote(action)
+#
+#     print(
+#         f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={error_val}",
+#         flush=True,
+#     )
+#
+#
+# def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+#     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+#     print(
+#         f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+#         flush=True,
+#     )
 
-
-def log_step(
-    step: int, action: str, reward: float, done: bool, error: Optional[str]
-) -> None:
-    # Format booleans and nulls according to the rules
-    error_val = error if error else "null"
-    done_val = str(done).lower()
-
-    # Escape newlines and carriage returns so the string stays on one line
-    safe_action = action.replace("\n", "\\n").replace("\r", "\\r")
-
-    # Print the strictly formatted single line
-    print(
-        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={error_val}",
-        flush=True,
-    )
-
-
-def url_log_step(
-    step: int, action: str, reward: float, done: bool, error: Optional[str]
-) -> None:
-    error_val = error if error else "null"
-    done_val = str(done).lower()
-
-    # URL encode the prompt. This turns spaces into %20, newlines into %0A, and '=' into %3D
-    safe_action = urllib.parse.quote(action)
-
-    print(
-        f"[STEP] step={step} action={safe_action} reward={reward:.2f} done={done_val} error={error_val}",
-        flush=True,
-    )
-
-
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
-        flush=True,
-    )
+chat_file = sys.stdout
 
 
 async def main():
@@ -156,6 +159,7 @@ async def main():
         async with AutoJailbreakEnv(
             base_url="https://adishu-auto-jailbreak.hf.space"
         ) as env:
+
             MAX_STEPS = 5
             rewards = []
             success = False
@@ -177,8 +181,8 @@ async def main():
                 )  # Change environment and reset
                 result = await env.reset()
                 target_reply = result.observation.target_reply
-                # print(f"[TARGET] {target_reply}", file=chat_file)
-                log_start(task=TASK_NAME, env="auto_jailbreak_env", model=MODEL_NAME)
+                print(f"[TARGET] {target_reply}", file=chat_file)
+                # log_start(task=TASK_NAME, env="auto_jailbreak_env", model=MODEL_NAME)
 
                 for step in range(1, MAX_STEPS + 1):
                     if result.done:
@@ -186,10 +190,10 @@ async def main():
 
                     steps_taken += 1
 
-                    # print(
-                    #     f"STEP: {step} --------------------------------------------------",
-                    #     file=chat_file,
-                    # )
+                    print(
+                        f"STEP: {step} --------------------------------------------------",
+                        file=chat_file,
+                    )
 
                     coach_response = chat_client.chat.completions.create(
                         model=MODEL_NAME,
@@ -199,7 +203,7 @@ async def main():
                     )
                     strategy = coach_response.choices[0].message.content
                     strategy = strategy.strip() if strategy is not None else "null"
-                    # print(f"[COACH] {strategy}\n\n", file=chat_file)
+                    print(f"[COACH] {strategy}\n\n", file=chat_file)
                     coach_messages[TASK_NAME].append(
                         {"role": "assistant", "content": strategy}
                     )
@@ -212,7 +216,7 @@ async def main():
                     )
                     attack = attack_response.choices[0].message.content
                     attack = attack.strip() if attack is not None else "null"
-                    # print(f"[ATTACKER] {attack}\n\n", file=chat_file)
+                    print(f"[ATTACKER] {attack}\n\n", file=chat_file)
 
                     result = await env.step(
                         AutoJailbreakAction(
@@ -223,13 +227,13 @@ async def main():
                     )
 
                     reward = result.reward if result.reward is not None else 0.0
-                    url_log_step(
-                        step,
-                        attack,
-                        reward,
-                        result.done,
-                        result.observation.error,
-                    )
+                    # url_log_step(
+                    #     step,
+                    #     attack,
+                    #     reward,
+                    #     result.done,
+                    #     result.observation.error,
+                    # )
 
                     target_reply = result.observation.target_reply
                     judge_reply = result.observation.judge_reply
@@ -237,9 +241,9 @@ async def main():
                     if judge_eval.get("final_verdict", "SAFE") == "COMPROMISED":
                         num_compromises += 1
                     rewards.append(reward)
-                    # print(f"[TARGET] {target_reply}\n\n", file=chat_file)
-                    # print(f"[JUDGE] {judge_reply}\n\n", file=chat_file)
-                    # print(f"[REWARD] {reward}\n\n", file=chat_file)
+                    print(f"[TARGET] {target_reply}\n\n", file=chat_file)
+                    print(f"[JUDGE] {judge_reply}\n\n", file=chat_file)
+                    print(f"[REWARD] {reward}\n\n", file=chat_file)
 
                     coach_messages[TASK_NAME].append(
                         {
@@ -259,12 +263,12 @@ async def main():
                         f"[DEBUG] env.close() error (container cleanup): {e}",
                         flush=True,
                     )
-                log_end(
-                    success=success,
-                    steps=steps_taken,
-                    score=score,
-                    rewards=rewards,
-                )
+                # log_end(
+                #     success=success,
+                #     steps=steps_taken,
+                #     score=score,
+                #     rewards=rewards,
+                # )
 
 
 if __name__ == "__main__":
